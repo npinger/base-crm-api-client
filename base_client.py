@@ -56,6 +56,13 @@ DEAL_STAGES = [
 ]
 
 
+def _unicode_dict(d):
+    new_dict = {}
+    for k, v in d.iteritems():
+        new_dict[k] = unicode(v).encode('utf-8')
+    return new_dict
+
+
 class BaseAPIService(object):
 
     def __init__(self, email, password, format='json'):
@@ -194,7 +201,7 @@ class BaseAPIService(object):
             else:
                 final_params[key] = deal_info[key]
 
-        params = urllib.urlencode(final_params)
+        params = urllib.urlencode(_unicode_dict(final_params))
 
         req = urllib2.Request(url, data=params, headers=self.header)
         if deal_id != None:
@@ -234,7 +241,7 @@ class BaseAPIService(object):
 
         url = self.base_url + url_base_template
 
-        params = urllib.urlencode({'note[content]': note_content})
+        params = urllib.urlencode({'note[content]': unicode(note_content).encode('utf-8')})
 
         req = urllib2.Request(url, data=params, headers=self.header)
         if note_id != None:
@@ -309,7 +316,7 @@ class BaseAPIService(object):
             else:
                 final_params['contact[' + key + ']'] = contact_info[key]
 
-        params = urllib.urlencode(final_params)
+        params = urllib.urlencode(_unicode_dict(final_params))
 
         req = urllib2.Request(url, data=params, headers=self.header)
 
@@ -350,7 +357,7 @@ class BaseAPIService(object):
 
         url = self.base_url + url_base_template
 
-        params = urllib.urlencode({'note[content]': note_content})
+        params = urllib.urlencode({'note[content]': unicode(note_content).encode('utf-8')})
 
         req = urllib2.Request(url, data=params, headers=self.header)
         if note_id != None:
