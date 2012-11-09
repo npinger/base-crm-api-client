@@ -63,6 +63,18 @@ def _unicode_dict(d):
     return new_dict
 
 
+def _list_to_tags(l):
+    new_tags = ''
+    for elem in l:
+        if elem != '':
+            new_tags += elem + ','
+
+    if new_tags == '':
+        return ''
+    else:
+        return new_tags[:-1]
+
+
 class BaseAPIService(object):
 
     def __init__(self, email, password, format='json'):
@@ -159,6 +171,12 @@ class BaseAPIService(object):
 
         return data
 
+    def get_deal(self, deal_id):
+        """
+        Gets the deal with the given deal_id. Returns the deal info.
+        """
+        return self._get_deal(deal_id=deal_id)
+
     def create_deal(self, deal_info):
         """
         Creates a new deal in base, given proper deal parameters in deal_info argument.
@@ -174,6 +192,50 @@ class BaseAPIService(object):
         Returns a json or xml response.
         """
         return self._post_deal(deal_info=deal_info, deal_id=deal_id)
+
+    def update_deal_tags(self, deal_id, tags, action='add'):
+        """
+        Adds, removes, or relplaces tags for a deal.  Returns a json or xml response.
+        Arguments:
+        deal_id: The base id of the deal that we want to work with
+        tags: comma separated string of tags. Eg. 'platinum,trial_period'
+        action: one of the following: 'add', 'remove', 'replace'
+        """
+        deal_data = self._get_deal(deal_id=deal_id, force_json=True)
+        deal_data_dict = json.loads(deal_data)
+        old_tags = deal_data_dict['deal']['deal_tags'].split(', ')
+        new_tags_list = tags.split(',')
+
+        if action == 'add':
+            new_tags = _list_to_tags(list(set(new_tags_list + old_tags)))
+        elif action == 'remove':
+            for elem in new_tags_list:
+                try:
+                    old_tags.remove(elem)
+                except ValueError:
+                    pass
+            new_tags = _list_to_tags(old_tags)
+        elif action == 'replace':
+            new_tags = _list_to_tags(new_tags_list)
+
+        return self.update_deal(deal_info={'deal_tags': new_tags}, deal_id=deal_id)
+
+    def _get_deal(self, deal_id, force_json=False):
+        """
+        Gets the deal with the given deal_id.  Returns the deal info.
+        Allows for forcing of json data if we need to update specific fields.
+        """
+        if force_json:
+            deal_url = 'deals/%s%s' % (deal_id, '.json')
+        else:
+            deal_url = 'deals/%s%s' % (deal_id, self.format)
+
+        url = self.base_url + deal_url
+        req = urllib2.Request(url, headers=self.header)
+        response = urllib2.urlopen(req)
+        data = response.read()
+
+        return data
 
     def _post_deal(self, deal_info={}, deal_id=None):
         """
@@ -272,6 +334,12 @@ class BaseAPIService(object):
 
         return data
 
+    def get_contact(self, contact_id):
+        """
+        Gets the contact with the given contact_id.  Returns teh contact info.
+        """
+        return self._get_contact(contact_id=contact_id)
+
     def create_contact(self, contact_info, person=True):
         """
         Creates a new contact based on contact_info with fields shown in CONTACT_PARAMS.
@@ -287,6 +355,53 @@ class BaseAPIService(object):
         Returns a json or xml response.
         """
         return self._post_contact(contact_info=contact_info, contact_id=contact_id, person=person)
+
+    def update_contact_tags(self, contact_id, tags, action='add'):
+        """
+        Adds, removes, or relplaces tags for a contact.  Returns a json or xml response.
+        Arguments:
+        contact_id: The base id of the contact that we want to work with
+        tags: comma separated string of tags. Eg. 'platinum,trial_period'
+        action: one of the following: 'add', 'remove', 'replace'
+        """
+        contact_data = self._get_contact(contact_id=contact_id, force_json=True)
+        contact_data_dict = json.loads(contact_data)
+        old_tags = contact_data_dict['contact']['tags_joined_by_comma'].split(', ')
+        new_tags_list = tags.split(',')
+
+        if action == 'add':
+            new_tags = _list_to_tags(list(set(new_tags_list + old_tags)))
+        elif action == 'remove':
+            for elem in new_tags_list:
+                try:
+                    old_tags.remove(elem)
+                except ValueError:
+                    pass
+            new_tags = _list_to_tags(old_tags)
+        elif action == 'replace':
+            new_tags = _list_to_tags(new_tags_list)
+
+        person = not contact_data_dict['contact']['is_organisation']
+
+        return self.update_contact(contact_info={'tag_list': new_tags}, contact_id=contact_id,
+            person=person)
+
+    def _get_contact(self, contact_id, force_json=False):
+        """
+        Gets the contact with the given contact_id.  Returns the contact info.
+        Allows for forcing of json data if we need to update specific fields.
+        """
+        if force_json:
+            contact_url = 'contacts/%s%s' % (contact_id, '.json')
+        else:
+            contact_url = 'contacts/%s%s' % (contact_id, self.format)
+
+        url = self.base_url + contact_url
+        req = urllib2.Request(url, headers=self.header)
+        response = urllib2.urlopen(req)
+        data = response.read()
+
+        return data
 
     def _post_contact(self, contact_info={}, contact_id=None, person=True):
         """
@@ -304,8 +419,11 @@ class BaseAPIService(object):
         if not person:
             CONTACT_PARAMS['is_organisation'] = 'true'
 
+        # If we are creating a new contact, we must have name and last_name parameters
+        # and we always must have some parameter
         if contact_info == {} or \
-                ('name' not in contact_info.keys() and 'last_name' not in contact_info.keys()):
+                (contact_id == None and 'name' not in contact_info.keys() and
+                'last_name' not in contact_info.keys()):
             return
 
         final_params = {}

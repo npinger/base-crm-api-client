@@ -12,7 +12,7 @@ To set up a connection to base, simply run:
 
     # This will set up a service that returns json responses.  To return xml, add the argument format='xml'
 
-Then you can start working with base objects, immediately.  Examples (assuming you have instantiated `base_conn` as above).
+Then you can start working with base objects immediately.  Examples (assuming you have instantiated `base_conn` as above).
 
 Examples of getting objects:
 
@@ -49,15 +49,19 @@ Accounts Functions:
 
 Deals Functions:
 * get_deals(page=1, stage='incoming')
+* get_deal(deal_id)
 * create_deal(deal_info)
 * update_deal(deal_info, deal_id)
+* update_deal_tags(deal_id, tags, action='add') (other actions are "remove" or "replace")
 * create_deal_note(deal_id, note_content)
 * update_deal_note(self, deal_id, note_content, note_id)
 
 Contacts Functions:
 * get_contacts(page=1)
+* get_contact(contact_id)
 * create_contact(self, contact_info, person=True)
 * update_contact(self, contact_info, contact_id, person=True)
+* update_contact_tags(contact_id, tags, action='add') (other actions are "remove" or "replace")
 * create_contact_note(self, contact_id, note_content)
 * update_contact_note(self, contact_id, note_content, note_id)
 
